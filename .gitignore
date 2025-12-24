@@ -1,0 +1,4 @@
+.vagrant/
+vagrant/.vagrant/
+actions-runner/
+actions-runner/_work/
