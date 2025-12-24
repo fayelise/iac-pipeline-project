@@ -2,28 +2,67 @@ name: IaC Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   deploy:
-    runs-on: self-hosted   # Utilisation de ton runner self-hosted
+    runs-on: self-hosted  # ou ubuntu-latest si tu veux un runner GitHub
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python (pour Ansible si nécessaire)
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
+      - name: Ensure dependencies are installed
         run: |
-          sudo apt update
-          sudo apt install -y vagrant virtualbox ansible docker.io
+          # --- VAGRANT ---
+          if ! command -v vagrant &> /dev/null; then
+            echo "Installing Vagrant..."
+            sudo apt update
+            sudo apt install -y vagrant
+          else
+            echo "Vagrant already installed"
+          fi
 
-      - name: Start VM with Vagrant
+          # --- VIRTUALBOX ---
+          if ! command -v VBoxManage &> /dev/null; then
+            echo "Installing VirtualBox..."
+            sudo apt update
+            sudo apt install -y virtualbox
+          else
+            echo "VirtualBox already installed"
+          fi
+
+          # --- ANSIBLE ---
+          if ! command -v ansible &> /dev/null; then
+            echo "Installing Ansible..."
+            sudo apt update
+            sudo apt install -y ansible
+          else
+            echo "Ansible already installed"
+          fi
+
+          # --- DOCKER ---
+          if ! command -v docker &> /dev/null; then
+            echo "Installing Docker..."
+            sudo apt update
+            sudo apt install -y docker.io
+            sudo systemctl enable --now docker
+          else
+            echo "Docker already installed"
+          fi
+
+          # --- CONTAINERD ---
+          if ! command -v containerd &> /dev/null; then
+            echo "Installing containerd..."
+            sudo apt update
+            sudo apt install -y containerd
+            sudo systemctl enable --now containerd
+          else
+            echo "containerd already installed"
+          fi
+
+      - name: Start Vagrant VM
         working-directory: ./vagrant
         run: vagrant up
 
@@ -31,7 +70,7 @@ jobs:
         working-directory: ./ansible
         run: ansible-playbook -i inventory/hosts.ini playbook.yml
 
-      - name: Destroy VM after deployment
+      - name: Destroy Vagrant VM
         if: ${{ always() }}
         working-directory: ./vagrant
         run: vagrant destroy -f
