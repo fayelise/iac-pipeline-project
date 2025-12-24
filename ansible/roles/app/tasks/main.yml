@@ -1,0 +1,39 @@
+- name: Copy app files
+  copy:
+    src: "{{ playbook_dir }}/../app/"
+    dest: /opt/app
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Remove existing container if present
+  docker_container:
+    name: iac-app
+    state: absent
+    force_kill: yes
+
+- name: Remove existing image if present
+  docker_image:
+    name: iac-app
+    state: absent
+  ignore_errors: yes
+
+- name: Build Docker image
+  docker_image:
+    name: iac-app
+    source: build
+    build:
+      path: /opt/app
+
+- name: Run Docker container
+  docker_container:
+    name: iac-app
+    image: iac-app
+    state: started
+    restart_policy: always
+    ports:
+      - "5001:5000"
+
+- name: Remove dangling Docker images
+  docker_prune:
+    images: yes

@@ -1,0 +1,25 @@
+- name: Install required system packages
+  apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+
+- name: Start and enable Docker
+  service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Install Python Docker SDK (required by Ansible)
+  apt:
+    name: python3-docker
+    state: present
