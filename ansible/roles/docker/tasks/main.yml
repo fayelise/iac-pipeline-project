@@ -7,19 +7,29 @@
       - lsb-release
     state: present
     update_cache: yes
+  become: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
 
 - name: Install Docker
   apt:
     name: docker.io
     state: present
+  become: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
 
 - name: Start and enable Docker
   service:
     name: docker
     state: started
     enabled: true
+  become: yes
 
 - name: Install Python Docker SDK (required by Ansible)
   apt:
     name: python3-docker
     state: present
+  become: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
