@@ -13,14 +13,14 @@ jobs:
     runs-on: self-hosted
 
     environment:
-      name: dev   # Protected environment (approval gate)
+      name: dev
 
     concurrency:
       group: deploy-${{ github.ref }}
       cancel-in-progress: true
 
     permissions:
-      id-token: write   # For OIDC
+      id-token: write
       contents: read
 
     steps:
@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v3
 
       # -------------------------
-      # Install dependencies safely
+      # Install dependencies
       # -------------------------
       - name: Install dependencies if missing
         run: |
@@ -85,15 +85,26 @@ jobs:
         run: terraform apply -auto-approve
 
       # -------------------------
-      # Vagrant Up (create VM)
+      # Vagrant Up
       # -------------------------
       - name: Vagrant Up
         run: |
-          cd vagrant  # adjust if your Vagrantfile is somewhere else
+          cd vagrant
           vagrant up --provider=virtualbox
 
       # -------------------------
-      # Run Ansible (inside VM)
+      # Generate dynamic Ansible inventory
+      # -------------------------
+      - name: Generate dynamic Ansible inventory
+        run: |
+          cd vagrant
+          vagrant ssh-config > ssh-config
+          cd ../ansible
+          echo "[servers]" > inventory/hosts.ini
+          awk '/HostName/ {host=$2} /Port/ {port=$2} /User / {user=$2} END {print "vm ansible_host="host" ansible_port="port" ansible_user="user" ansible_ssh_private_key_file=\"/home/runner/.vagrant.d/insecure_private_key\" ansible_ssh_common_args=\"-o StrictHostKeyChecking=no\""}' ../vagrant/ssh-config >> inventory/hosts.ini
+
+      # -------------------------
+      # Run Ansible Playbook
       # -------------------------
       - name: Run Ansible Playbook
         run: |
@@ -106,7 +117,7 @@ jobs:
       - name: Verify Docker container in VM
         run: |
           cd vagrant
-          vagrant ssh vm -c "docker ps"
+          vagrant ssh default -c "docker ps"
 
       # -------------------------
       # Cleanup
